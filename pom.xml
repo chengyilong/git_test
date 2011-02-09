@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+Copyright 2010 Intuit Inc. All rights reserved.
+Unauthorized reproduction is a violation of applicable law 
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.intuit.cc</groupId>
+  <artifactId>plugins</artifactId>
+  <name>plugins</name>
+  <packaging>maven-plugin</packaging>
+  <version>1.1.2</version>
+
+  <!-- 
+  The walker-plugin must be built first in order to build the other projects
+  1. in walker-plugin folder, mvn install
+  -->
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-plugin-api</artifactId>
+      <version>2.0.6</version>
+    </dependency>    
+   <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-core</artifactId>
+      <version>2.0.6</version>
+    </dependency>
+	<dependency>
+	  <groupId>org.apache.maven.shared</groupId>
+	  <artifactId>maven-invoker</artifactId>
+	  <version>2.0.6</version>
+	</dependency>
+	<dependency>
+	  <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-interpolation</artifactId>
+      <version>1.7</version>
+	</dependency>
+
+    <!-- require to build fix - creating application.xml target -->
+    <dependency>
+	  <groupId>org.apache.maven.shared</groupId>
+	  <artifactId>maven-dependency-tree</artifactId>
+	  <version>1.1</version>
+	</dependency>
+    
+    <!-- require to build fix - creating report-only target -->
+	<dependency>
+      <groupId>org.codehaus.mojo</groupId>
+      <artifactId>cobertura-maven-plugin</artifactId>
+      <version>2.4</version>
+	</dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-utils</artifactId>
+      <version>2.0.2</version>
+    </dependency>
+
+  </dependencies>
+  
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>2.0.2</version>
+          <configuration>
+            <encoding>iso-8859-1</encoding>
+            <source>1.6</source>
+            <target>1.6</target>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <distributionManagement>
+    <downloadUrl>http://calart06.diginsite.com:8081/nexus/content/groups/public/com/intuit/cc/plugins</downloadUrl>
+    <!-- for release build, execute mvn clean deploy -->
+    <repository>
+      <id>DI-Releases</id>
+      <name>DI Development Releases</name>
+      <url>http://calart06.diginsite.com:8081/nexus/content/repositories/releases</url>
+    </repository>
+    <!-- for snapshot build, execute mvn clean deploy -->
+    <snapshotRepository>
+      <id>DI-Snapshots</id>
+      <name>DI Development Snapshots</name>
+      <uniqueVersion>false</uniqueVersion>
+      <url>http://calart06.diginsite.com:8081/nexus/content/repositories/snapshots</url>
+    </snapshotRepository>
+  </distributionManagement>
+
+
+</project>
