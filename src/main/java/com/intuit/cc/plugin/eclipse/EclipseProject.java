@@ -51,27 +51,24 @@ public abstract class EclipseProject {
     	this.callback= callback;
         this.log= log;
         this.project= project;
-        this.projectName= getProjectName(project.getArtifactId(), 
-        		project.getVersion(), testScope);
+        this.projectName= getProjectName(project.getArtifactId(), testScope);
         this.artifacts= artifacts;
         this.eclipseProjects= eclipseProjects;
         this.testScope= testScope;
     }
         
-    String getProjectName(String name, String version, boolean isTest) {
-    	StringBuilder sb= new StringBuilder();
-    	sb.append(name)
-    		.append('-')
-    		.append(version);
-    	if(isTest) {
-    		sb.append('-').append("tests");
-    	}
-		return sb.toString();
+    String getProjectName(String name, boolean isTest) {
+		if(isTest) {
+			return name+"-tests";
+		}
+		else {
+			return name;
+		}
     }
     
     String getProjectNameFromDependency(Dependency dependency) {
     	return getProjectName(
-    			dependency.getArtifactId(), dependency.getVersion(), dependency.getType().equals("test-jar"));
+    			dependency.getArtifactId(), dependency.getType().equals("test-jar"));
     }
     
     public void generate() throws IOException {
