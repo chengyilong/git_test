@@ -1,9 +1,8 @@
 /*
- * ©2010 Intuit Inc. All rights reserved.
+ * (c) 2012 Intuit Inc. All rights reserved.
  * Unauthorized reproduction is a violation of applicable law
  */
 package com.intuit.cc.plugin.earxml;
-
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -12,7 +11,6 @@ import java.nio.charset.Charset;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.factory.ArtifactFactory;
 import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
@@ -28,7 +26,6 @@ import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.shared.dependency.tree.DependencyNode;
 import org.apache.maven.shared.dependency.tree.DependencyTreeBuilder;
-
 /**
  * A mojo to create an application xml with ejbs in runtime dependencies order
  * @goal create-application-xml
@@ -43,7 +40,6 @@ public class CreateApplicationXml
      * @parameter expression="${project.build.directory}/ordered-application.xml"
      */
     protected String generatedDescriptorLocation;
-
     /**
      * The maven project.
      *
@@ -52,7 +48,6 @@ public class CreateApplicationXml
      * @readonly
      */
     protected MavenProject project;
-
     /**
      * The artifact repository to use.
      * 
@@ -61,7 +56,6 @@ public class CreateApplicationXml
      * @readonly
      */
     private ArtifactRepository localRepository;
-    
     /**
      * The artifact factory to use.
      * 
@@ -70,7 +64,6 @@ public class CreateApplicationXml
      * @readonly
      */
     private ArtifactFactory artifactFactory;
-    
     /**
      * Used to look up Artifacts in the remote repository.
      * 
@@ -80,7 +73,6 @@ public class CreateApplicationXml
      * @readonly
      */
     protected ArtifactResolver artifactResolver;
-
     /**
      * The artifact metadata source to use.
      * 
@@ -89,7 +81,6 @@ public class CreateApplicationXml
      * @readonly
      */
     private ArtifactMetadataSource artifactMetadataSource;
-
     /**
      * The artifact collector to use.
      * 
@@ -98,7 +89,6 @@ public class CreateApplicationXml
      * @readonly
      */
     private ArtifactCollector artifactCollector;
-
     /**
      * The dependency tree builder to use.
      * 
@@ -107,11 +97,14 @@ public class CreateApplicationXml
      * @readonly
      */
     private DependencyTreeBuilder dependencyTreeBuilder;
-    
+    /**
+     * Should file names have versions?
+     */
+    private boolean withVersion;
     // for maven
     public CreateApplicationXml() {
+    	withVersion= true;
     }
-    
     // for Eclipse plugin
     public CreateApplicationXml(String generatedDescriptorLocation,
 			MavenProject project, ArtifactRepository localRepository,
@@ -128,14 +121,13 @@ public class CreateApplicationXml
 		this.artifactMetadataSource = artifactMetadataSource;
 		this.artifactCollector = artifactCollector;
 		this.dependencyTreeBuilder = dependencyTreeBuilder;
+		this.withVersion= false;
 		setLog(log);
 	}
-
 	/**
      * Map of Artifact to EarModule
      */
     private Set<Artifact> earArtifacts= new LinkedHashSet<Artifact>();
-
     public void execute() throws MojoExecutionException {
         addDependencies();        
         try {
@@ -144,26 +136,52 @@ public class CreateApplicationXml
             throw new MojoExecutionException(e.getMessage(), e);
         }
     }
-    
     private void createApplicationXml() throws IOException {
         Writer ps= new OutputStreamWriter(new FileOutputStream(generatedDescriptorLocation), Charset.forName("UTF-8"));        
         ps.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")        
             .append("<!DOCTYPE application PUBLIC \"-//Sun Microsystems, Inc.//DTD J2EE Application 1.3//EN\" \"http://java.sun.com/dtd/application_1_3.dtd\">\n")
             .append("<application>\n")
             .append("<display-name>").append(project.getName()).append("</display-name>\n");
-        
         for(Artifact artifact : earArtifacts) {
-            ps.append("<module><ejb>")
-            		.append(artifact.getFile().getName())
-            		.append("</ejb></module>\n");            
+            appendArtifact(ps, artifact);
         }
         ps.append("</application>");
         ps.close();        
     }
 
+    private void appendArtifact(Writer ps, Artifact artifact)
+            throws IOException
+    {
+        if("ejb".equals(artifact.getType()))
+        {
+            ps.append("<module><ejb>");
+            if(withVersion) {
+            	ps.append(artifact.getFile().getName());
+            }
+            else {
+        		ps.append(artifact.getArtifactId()).append(".jar");
+            }
+            ps.append("</ejb></module>\n");
+        }
+        else if("war".equals(artifact.getType()))
+        {
+            ps.append("<module><web><web-uri>");
+            if(withVersion) {
+            	ps.append(artifact.getFile().getName());
+            }
+            else {
+        		ps.append(artifact.getArtifactId()).append(".jar");
+            }
+            ps.append("</web-uri>");
+            ps.append("<context-root>");
+            ps.append(artifact.getArtifactId());
+            ps.append("</context-root>");
+            ps.append("</web></module>\n");
+        }
+    }
+
     void addDependencies() throws MojoExecutionException {
         getLog().debug( "addDependencies for project "+project);
-    	
         ScopeArtifactFilter filter = new ScopeArtifactFilter( Artifact.SCOPE_RUNTIME );
         try
         {
@@ -177,7 +195,6 @@ public class CreateApplicationXml
             throw new MojoExecutionException( "Cannot build project dependency tree", exception );
         }
     }
-    
     @SuppressWarnings( "unchecked" )
     void addDependencies(ScopeArtifactFilter filter, DependencyNode node) throws ArtifactResolutionException, ArtifactNotFoundException {
         Artifact artifact = node.getArtifact();
@@ -188,15 +205,19 @@ public class CreateApplicationXml
         	if( !project.getArtifact().equals(artifact) ) {
         		artifactResolver.resolve(artifact, project.getRemoteArtifactRepositories(), localRepository);
         	}
-            
             for ( DependencyNode child : (List<DependencyNode>)node.getChildren() ) {
                 addDependencies(filter, child);
             }            
-            if ( "ejb".equals( artifact.getType() )
+            if ( isSupportedArtifactType( artifact.getType() )
             		&& !artifact.equals( project.getArtifact() ) ) {
                 earArtifacts.add(artifact);
                 getLog().debug( "added dependency: "+artifact );
             }
         }
-    }        
+    }
+
+    private boolean isSupportedArtifactType(String type)
+    {
+        return "ejb".equals(type) || "war".equals(type);
+    }
 }
