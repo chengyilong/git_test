@@ -1,5 +1,5 @@
 /*
- * ©2010 Intuit Inc. All rights reserved.
+ *2010 Intuit Inc. All rights reserved.
  * Unauthorized reproduction is a violation of applicable law
  */
 package com.intuit.cc.plugin.eclipse;
@@ -167,7 +167,7 @@ public class JarProject extends EclipseProject {
 	void generateFacet(Writer writer) throws IOException {
         writer.append("\t<fixed facet=\"jst.java\"/>\n"
     				+"\t<fixed facet=\"jst.utility\"/>\n"
-    				+"\t<installed facet=\"jst.java\" version=\"6.0\"/>\n"
+    				+"\t<installed facet=\"jst.java\" version=\"1.7\"/>\n"
         			+"\t<installed facet=\"jst.utility\" version=\"1.0\"/>\n");
 	}
 
