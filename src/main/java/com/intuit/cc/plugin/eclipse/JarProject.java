@@ -125,8 +125,33 @@ public class JarProject extends EclipseProject {
     		return;
     	}
     	String location= getProjectNameFromDependency(dependency);
-        writer.append("\t<classpathentry combineaccessrules=\"false\" exported=\"true\" kind=\"src\" path=\"/")
-                .append(location).append("\"/>\n");
+    	if(isDependencyInSameHierachy(dependency.getArtifactId())) {	    	
+    		writer.append("\t<classpathentry combineaccessrules=\"false\" exported=\"true\" kind=\"src\" path=\"/")
+    			.append(location).append("\"/>\n");
+    	} else {
+    		writer.append("\t<classpathentry kind=\"lib\" path=\"")
+    			.append(getDependencyLocationInM2(dependency)).append("\">\n").append("\t</classpathentry>\n");
+    	}
+    }
+    
+    boolean isDependencyInSameHierachy(String artifactId) {
+    	File dependencySrcFolder = new File("..", artifactId + "/src");
+    	if(dependencySrcFolder.exists() && dependencySrcFolder.isDirectory())
+    		return true;
+    	return false;
+    }
+    
+    String getDependencyLocationInM2(Dependency dependency) {
+    	String fileName = System.getProperty("user.home") + "/.m2/repository/" 
+							+ "com/intuit/cc/" + dependency.getArtifactId() 
+							+ "/" + dependency.getVersion() + "/" + dependency.getArtifactId()
+							+ "-" + dependency.getVersion();
+    	if(!dependency.getType().equals("test-jar")) {
+    		fileName += ".jar";
+    	} else {
+    		fileName += "-tests.jar";
+    	}
+    	return fileName;
     }
     
     void writeClasspathEntries(Writer writer) throws IOException {

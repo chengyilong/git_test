@@ -159,7 +159,15 @@ public class BaseWalker extends AbstractMojo {
         if(parent!=null && matcher.isIdInGroup(parent.getGroupId())) {
             String dependencyFolderName = Helper.getProjectFolderName(parent);
 			File dependencyFolder = matcher.groupFolderFromDependencyName(dependencyFolderName);
-            checkCoordinate(Helper.getCoordinate(project), dependencyFolder);        	
+			if(dependencyFolder.exists()) { 			
+				checkCoordinate(Helper.getCoordinate(project), dependencyFolder);
+			} else {
+				getLog().info("Checking ~/.m2 for " + parent.getArtifactId());
+				if(!isArtifactInM2(parent.getGroupId(), parent.getArtifactId(), parent.getVersion())) {
+					getLog().error("Error: " + parent.getArtifactId() + "-" + parent.getVersion() + " cannot be found in ~/.m2");
+					System.exit(1);
+				}
+			}
         }
 	}
 
@@ -173,7 +181,15 @@ public class BaseWalker extends AbstractMojo {
             if(matcher.isIdInGroup(dependency.getGroupId())) {
                 String dependencyFolderName = Helper.getProjectFolderName(dependency);
 				File dependencyFolder = matcher.groupFolderFromDependencyName(dependencyFolderName);
-                checkCoordinate(Helper.getCoordinate(dependency), dependencyFolder);
+				if(dependencyFolder.exists()) { 			
+					checkCoordinate(Helper.getCoordinate(project), dependencyFolder);
+				} else {
+					getLog().info("Checking ~/.m2 for " + dependency.getArtifactId());
+					if(!isArtifactInM2(dependency.getGroupId(), dependency.getArtifactId(), dependency.getVersion())) {
+						getLog().error("Error: " + dependency.getArtifactId() + "-" + dependency.getVersion() + " cannot be found in ~/.m2");
+						System.exit(1);
+					}
+				}
             }
         };
 	}
@@ -200,6 +216,23 @@ public class BaseWalker extends AbstractMojo {
         }
 		invoke(dependentFolder);
         readArtifactVersions(propertiesFile);
+	}
+	
+	/**
+	 * Check the existence of jar/pom file of artifact in local maven repository
+	 * @param groupId
+	 * @param artifactId
+	 * @param version
+	 * @return boolean
+	 */
+	protected boolean isArtifactInM2 (String groupId, String artifactId, String version) {
+		String folderPath = System.getProperty("user.home") + "/.m2/repository/" + groupId.replace('.', '/') + "/" + artifactId + "/" + version;
+		File artifactJar = new File(folderPath, artifactId + "-" + version + ".jar");
+		File artifactPom = new File(folderPath, artifactId + "-" + version + ".pom");
+		if(artifactJar.exists() || artifactPom.exists()) {
+			return true;
+		}
+		return false;
 	}
 
 	/**
